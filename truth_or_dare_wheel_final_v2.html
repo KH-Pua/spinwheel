@@ -1,0 +1,262 @@
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .page {
+    min-height: 100vh; background: #0f0f13;
+    font-family: 'DM Sans', sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 2rem 1rem 3rem; gap: 1.5rem;
+  }
+  .title-row { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+  .title-row h1 { font-size: 24px; font-weight: 600; color: #f0eeff; letter-spacing: -0.4px; }
+  .title-row p { font-size: 13px; color: #7b7a94; }
+  .wheel-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+  .pointer {
+    position: absolute; right: -20px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 11px solid transparent;
+    border-bottom: 11px solid transparent;
+    border-right: 20px solid #E24B4A;
+  }
+  .spin-btn {
+    padding: 14px 52px; font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600; border-radius: 999px; border: none;
+    background: #7F77DD; color: #fff; cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .spin-btn:hover { opacity: 0.85; }
+  .spin-btn:active { transform: scale(0.97); }
+  .spin-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .result-card {
+    width: 100%; max-width: 400px;
+    border-radius: 16px; border: 1px solid #2a2a3a;
+    background: #18181f; overflow: hidden;
+  }
+  .result-header {
+    background: #1e1b2e; padding: 8px 16px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid #2a2a3a;
+  }
+  .result-dot { width: 8px; height: 8px; border-radius: 50%; background: #7F77DD; flex-shrink: 0; }
+  .result-badge { font-size: 11px; font-weight: 600; color: #AFA9EC; letter-spacing: 0.5px; text-transform: uppercase; }
+  .result-body {
+    padding: 1.25rem; min-height: 72px;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; font-size: 15px; line-height: 1.65; color: #e8e6ff;
+  }
+  .acc-wrap {
+    width: 100%; max-width: 400px;
+    border: 1px solid #2a2a3a; border-radius: 16px;
+    overflow: hidden; background: #18181f;
+  }
+  .acc-trigger {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 16px; cursor: pointer;
+    background: #18181f; transition: background 0.15s;
+    user-select: none;
+  }
+  .acc-trigger:hover { background: #1e1b2e; }
+  .acc-trigger-left { display: flex; align-items: center; gap: 10px; }
+  .acc-dot { width: 8px; height: 8px; border-radius: 50%; background: #7F77DD; }
+  .acc-trigger-label { font-size: 13px; font-weight: 600; color: #e8e6ff; }
+  .acc-trigger-sub { font-size: 12px; color: #4a4a62; }
+  .acc-chevron { transition: transform 0.25s; display: flex; align-items: center; }
+  .acc-chevron svg { width: 14px; height: 14px; stroke: #4a4a62; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .acc-chevron.open { transform: rotate(180deg); }
+  .acc-body {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.35s ease;
+    border-top: 0px solid #2a2a3a;
+  }
+  .acc-body.open { max-height: 600px; border-top: 1px solid #2a2a3a; }
+  .q-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px solid #22222e;
+    font-size: 13px; color: #9997b8; line-height: 1.55;
+    transition: background 0.2s, color 0.2s;
+  }
+  .q-item:last-child { border-bottom: none; }
+  .q-item.active { background: #1e1b2e; color: #e8e6ff; border-left: 3px solid #7F77DD; padding-left: 11px; }
+  .q-num {
+    font-size: 10px; font-weight: 600; color: #7F77DD;
+    background: #1e1b2e; border-radius: 999px;
+    min-width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .q-item.active .q-num { background: #2a2040; color: #AFA9EC; }
+  @media (max-width: 420px) {
+    .page { padding: 1.5rem 0.75rem 2.5rem; gap: 1.25rem; }
+    .title-row h1 { font-size: 20px; }
+    .spin-btn { padding: 13px 40px; font-size: 14px; }
+    .result-body { font-size: 14px; }
+  }
+</style>
+
+<div class="page">
+  <div class="title-row">
+    <h1>Truth or Dare</h1>
+    <p>Spin the wheel — answer honestly!</p>
+  </div>
+
+  <div class="wheel-wrap">
+    <canvas id="wheel" width="300" height="300" style="border-radius:50%;"></canvas>
+    <div class="pointer"></div>
+  </div>
+
+  <button class="spin-btn" id="spinBtn" onclick="spin()">Spin the wheel</button>
+
+  <div class="result-card">
+    <div class="result-header">
+      <div class="result-dot"></div>
+      <span class="result-badge" id="qLabel">Waiting</span>
+    </div>
+    <div class="result-body" id="result">Spin to reveal your question!</div>
+  </div>
+
+  <div class="acc-wrap">
+    <div class="acc-trigger" id="accTrigger" onclick="toggleAcc()">
+      <div class="acc-trigger-left">
+        <div class="acc-dot"></div>
+        <span class="acc-trigger-label">All questions</span>
+        <span class="acc-trigger-sub">18 total</span>
+      </div>
+      <span class="acc-chevron" id="accChevron">
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </div>
+    <div class="acc-body" id="accBody">
+      <div id="qList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  "What's one thing about yourself you've never told anyone on a first meetup?",
+  "If your friends described you in 3 words, what would they say?",
+  "What's your most embarrassing moment?",
+  "What's one place on your travel wish list that you haven't told many people about?",
+  "What's your biggest green flag in a person?",
+  "If you could only eat one cuisine for the rest of your life, what would it be?",
+  "What's something that instantly makes you like someone more?",
+  "What's one habit you have that you think is a little weird?",
+  "What's the most thoughtful thing someone has ever done for you?",
+  "What's one thing you wish people understood about you better?",
+  "What kind of movie best describes your love life so far?",
+  "What's your biggest red flag — be honest!",
+  "Describe your ideal Sunday.",
+  "What's one thing you always notice first when you meet someone?",
+  "Would you rather have a partner who's a great cook or great at planning dates?",
+  "What's the most spontaneous thing you've ever done?",
+  "What's one thing about PJ you secretly love but would never admit?",
+  "What's one thing you'd want your future partner to know about you before committing?"
+];
+
+const sliceColors = [
+  '#CECBF6','#9FE1CB','#F5C4B3','#F4C0D1','#B5D4F4',
+  '#C0DD97','#FAC775','#F7C1C1','#AFA9EC','#5DCAA5',
+  '#F0997B','#ED93B1','#85B7EB','#97C459','#EF9F27',
+  '#F09595','#7F77DD','#1D9E75'
+];
+
+const qList = document.getElementById('qList');
+questions.forEach((q, i) => {
+  const row = document.createElement('div');
+  row.className = 'q-item';
+  row.id = 'qi-' + i;
+  row.innerHTML = '<span class="q-num">' + (i+1) + '</span><span>' + q + '</span>';
+  qList.appendChild(row);
+});
+
+let accOpen = false;
+function toggleAcc() {
+  accOpen = !accOpen;
+  document.getElementById('accBody').classList.toggle('open', accOpen);
+  document.getElementById('accChevron').classList.toggle('open', accOpen);
+}
+
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const n = questions.length;
+const arc = (2 * Math.PI) / n;
+let currentAngle = 0;
+let spinning = false;
+let lastIdx = -1;
+
+function drawWheel(angle) {
+  ctx.clearRect(0, 0, 300, 300);
+  const cx = 150, cy = 150, r = 144;
+  for (let i = 0; i < n; i++) {
+    const start = angle + i * arc;
+    const end = start + arc;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, end);
+    ctx.closePath();
+    ctx.fillStyle = sliceColors[i % sliceColors.length];
+    ctx.fill();
+    ctx.strokeStyle = '#0f0f13';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + arc / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#2C2C2A';
+    ctx.font = '600 10px "DM Sans", sans-serif';
+    ctx.fillText('Q' + (i + 1), r - 8, 4);
+    ctx.restore();
+  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, 24, 0, 2 * Math.PI);
+  ctx.fillStyle = '#0f0f13';
+  ctx.fill();
+  ctx.strokeStyle = '#2a2a3a';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = '#7F77DD';
+  ctx.font = '600 11px "DM Sans", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('GO', cx, cy);
+}
+
+drawWheel(currentAngle);
+
+function spin() {
+  if (spinning) return;
+  spinning = true;
+  document.getElementById('spinBtn').disabled = true;
+  document.getElementById('result').textContent = 'Spinning...';
+  document.getElementById('qLabel').textContent = '...';
+  if (lastIdx >= 0) document.getElementById('qi-' + lastIdx).classList.remove('active');
+  const extraSpins = (6 + Math.floor(Math.random() * 5)) * 2 * Math.PI;
+  const targetAngle = currentAngle + extraSpins + Math.random() * 2 * Math.PI;
+  const duration = 3500;
+  const start = performance.now();
+  const startAngle = currentAngle;
+  function animate(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 4);
+    currentAngle = startAngle + (targetAngle - startAngle) * ease;
+    drawWheel(currentAngle);
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      currentAngle = targetAngle % (2 * Math.PI);
+      const pointerAngle = (2 * Math.PI - currentAngle) % (2 * Math.PI);
+      const idx = Math.floor(pointerAngle / arc) % n;
+      document.getElementById('result').textContent = questions[idx];
+      document.getElementById('qLabel').textContent = 'Question ' + (idx + 1);
+      const el = document.getElementById('qi-' + idx);
+      el.classList.add('active');
+      lastIdx = idx;
+      spinning = false;
+      document.getElementById('spinBtn').disabled = false;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+</script>
